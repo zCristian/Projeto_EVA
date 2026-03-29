@@ -10,6 +10,9 @@ from scipy.optimize import fsolve
 
 from parameters import *
 
+results = Estimatives()
+AR = AspectRatio()
+
 ################## FUEL EQUATIONS ##################
 
 # W0 Equation - Equation 3.4
@@ -19,24 +22,28 @@ def W0Eq():
 
 # Empty weight fraction equation (We/W0) - Equation Table 3.1
 def WeW0Eq():    
-    WeW0 = A * (W0Eq() ** C) * Kvs    
+    WeW0 = A * (W0Eq() ** C) * Kvs   
     return WeW0
 
 # Cruise weight fraction - Equation 3.6
 def Wcruise():
-    return np.exp(-R * Cc() / (V * LDc()))
-
-# Loiter weight fraction - Equation 3.8
-def Wloiter():
-    return np.exp(-E * Cl() / LDl())
+    cc = float(Cc())
+    ldc = float(LDc())
+    wcruise = np.exp(-R * cc / (V * ldc))
+    results.wcruise = wcruise
+    return wcruise
 
 # Segment weight fraction equation - Section 3.4
-def Wsegments():     
-    return W1W0 * W2W1 * Wcruise() * Wloiter() * W5W4   
+def Wsegments(): 
+    Wseg = W1W0 * W2W1 * Wcruise() 
+    results.wseg = Wseg
+    return Wseg
 
 # Fuel-fraction - Equation 3.11 - Assuming 6% allowence for reserve and trapped fuel
 def WfW0():
-    return 1.06 * (1 - Wsegments())
+    wfw0 = 1.06 * (1 - Wsegments())
+    results.wfw0 = wfw0
+    return wfw0
 
 # Iterative solution for W0
 def func(W0):
@@ -46,28 +53,27 @@ def func(W0):
 
 # Wetted Aspect ratio - Equation Fig. 3.6
 def WAR():    
-    WAR = A / (Swet / Sref)    
+    WAR = AR.value / (SwetSref)  
+    print("WAR: ", WAR)  
     return WAR
 
 # L/Dmax Equation
-def LDmax():    
-    LDmax = Kld * np.sqrt(A / (Swet / Sref))    
+def LDmax():  
+    print()  
+    LDmax = Kld * np.sqrt(AR.value / (SwetSref))  
+    results.ldmax = LDmax
     return LDmax
 
 # L/D cruise equation for propeller
 def LDc():
-    return LDmax()
-
-# L/D loiter equation for propeller
-def LDl():
-    return 0.866 * LDmax()
+    ldc = LDmax()
+    results.ldc = ldc
+    return ldc
 
 ################## PARAMETERS EQUATIONS ##################
 
 # Propeller cruise specific fuel consumption - Equation 3.10
 def Cc():
-    return Ccbhp * V / (550 * Ccnp)
-
-# Propeller loiter specific fuel consumption - Equation 3.10
-def Cl():
-    return Clbhp * V / (550 * Clnp)
+    cc = Ccbhp * V / (550 * Ccnp)
+    results.Cc = cc
+    return cc
