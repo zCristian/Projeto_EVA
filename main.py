@@ -4,11 +4,12 @@ Created on Sat Mar 14 14:45:14 2026
 
 @author: Vinícius Soares
 """
-
 from parameters import *
 from equations import *
+from ConstrainstsDiagram import *
 import matplotlib.pyplot as plt
 
+'''
 W0_initial_guess = 1000  # adjust based on your problem
 
 ldmax_list, wfw0_list, wew0_list, wcruise_list, w0_list = [], [], [], [], []
@@ -53,3 +54,11 @@ plt.plot(AR_list, w0_list, "o")
 plt.ylabel("W0")
 plt.xlabel("AR")
 plt.savefig("W0.png")
+'''
+
+params = ConstraintsParameters()
+curves = calc_curves(params.WS,params)
+plot_ConstraintsDiagram(params,curves)
+
+
+

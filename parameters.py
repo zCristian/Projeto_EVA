@@ -6,7 +6,7 @@ Created on Sat Mar 14 14:46:33 2026
 """
 
 import numpy as np
-
+from dataclasses import dataclass
 Wcrew = 0 # Wcrew
 Wpay = 60 * 2.2046 # Wpayload (lb)
 W1W0 = 0.97 # Warmup and takeoff
@@ -54,3 +54,38 @@ class Estimatives:
         )
 
 
+@dataclass
+
+class ConstraintsParameters:
+    
+    # Wing loading range for T/W curves:
+    WS = np.linspace(1, 100, 200)     # [lbf/ft²]
+
+    # Stall Speed Criteria:
+    rho_stall: float = 0.0023769      # [slug/ft³]
+    v_stall: float = 72.0             # [ft/s]
+    cl_max_stall: float = 1.8         # [-]
+
+    # Cruise Speed Criteria:
+    q_cruise: float = 30.0            # [lbf/ft²]
+    cd_min_cruise: float = 0.02       # [-]
+    k_ind_drag: float = 0.06          # [-]
+
+    # Rate of Climb Criteria:
+    v_vertical_climb: float = 13.0    # [ft/s]
+    v_inf_climb: float = 180.0        # [ft/s]
+    q_climb: float = 28.0             # [lbf/ft²]
+    cd_min_climb: float = 0.02        # [-]
+    k_ind_climb: float = 0.06         # [-]
+
+    # Level Constant Velocity Turn Criteria:
+    q_turn: float = 35.0              # [lbf/ft²]
+    n_turn: float = 2.0               # [-]
+    cd_min_turn: float = 0.02         # [-]
+    k_ind_turn: float = 0.06          # [-]
+
+    # Service Ceiling Criteria:
+    v_y_ceiling: float = 160.0        # [ft/s]
+    q_ceiling: float = 18.0           # [lbf/ft²]
+    cd_min_ceiling: float = 0.02      # [-]
+    k_ind_ceiling: float = 0.06       # [-]
