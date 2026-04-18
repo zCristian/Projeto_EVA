@@ -62,21 +62,21 @@ class ConstraintsParameters:
     WS = np.linspace(1, 100, 200)     # [lbf/ft²]
 
     # Stall Speed Criteria:
-    rho_stall: float = 0.0023769      # [slug/ft³]
-    v_stall: float = 72.0             # [ft/s]
-    cl_max_stall: float = 1.8         # [-]
+    rho_stall: float = 0.002378         # [slug/ft³]  //sea level
+    v_stall: float = 90                 # [ft/s]
+    cl_max_stall: float = 1.8           # [-]
 
     # Cruise Speed Criteria:
-    q_cruise: float = 30.0            # [lbf/ft²]
+    q_cruise: float = 50.67           # [lbf/ft²]  //pho=0.0019528281740147837 V=227,8
     cd_min_cruise: float = 0.02       # [-]
-    k_ind_drag: float = 0.06          # [-]
+    k_ind_cruise: float = 0.04        # [-]        //e=0.8 AR=10
 
     # Rate of Climb Criteria:
-    v_vertical_climb: float = 13.0    # [ft/s]
-    v_inf_climb: float = 180.0        # [ft/s]
-    q_climb: float = 28.0             # [lbf/ft²]
-    cd_min_climb: float = 0.02        # [-]
-    k_ind_climb: float = 0.06         # [-]
+    v_vertical_climb: float = 1.2*v_stall*0.1    # [ft/s]
+    v_inf_climb: float = 1.2*v_stall                                # [ft/s]     //V_inf = 1.2V_stall
+    q_climb: float = 7.976                                          # [lbf/ft²]  //pho=0.0021568512825572957 V=86.4
+    cd_min_climb: float = 0.02                                      # [-]
+    k_ind_climb: float = 0.04                                       # [-]
 
     # Level Constant Velocity Turn Criteria:
     q_turn: float = 35.0              # [lbf/ft²]
@@ -84,8 +84,22 @@ class ConstraintsParameters:
     cd_min_turn: float = 0.02         # [-]
     k_ind_turn: float = 0.06          # [-]
 
-    # Service Ceiling Criteria:
-    v_y_ceiling: float = 160.0        # [ft/s]
-    q_ceiling: float = 18.0           # [lbf/ft²]
+    # Service Ceiling Criteria: (Gudmundsson 3-11)
+    #v_y_ceiling: float = 160.0       # [ft/s]
+    q_ceiling:      float = 50.67     # [lbf/ft²]  //pho=0.0019528281740147837 V=227,8
     cd_min_ceiling: float = 0.02      # [-]
-    k_ind_ceiling: float = 0.06       # [-]
+    k_ind_ceiling:  float = 0.04      # [-]
+
+    # Service Ceiling Criteria: (Gudmundsson Slide)
+    v_vertical:  float = 100/60       # [ft/s]  
+    rho_ceiling: float = 0.00195      # [slug/ft³] // 2000m
+
+    # T-O Ground Run Distance Criteria  
+    cl_max_to:      float = 1.8           # [-]
+    cl_to:          float = 0.8*cl_max_to # [-]
+    cd_to:          float = 0.08          # [-]
+    rho_to:         float = 0.00215       # [slug/ft³] //1000m
+    #q_to:           float = 5            # [lbf/ft²] 
+    sg:             float = 196.85        # [ft]
+    friction_const: float = 0.04          # [-]
+    g_acc:          float = 32.174        # [ft/s²]

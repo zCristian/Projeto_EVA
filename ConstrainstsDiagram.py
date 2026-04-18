@@ -60,10 +60,10 @@ def cruise_speed_TW(wing_loading,q_cruise,cd_min,k_ind):
     Calcula a curva de velocidade de cruzeiro
 
     params:
-            wing_loading:   wing loading, W/S [lbf/ft²],
-            q_cruise:              dynamic pressure in cruise [lbf/ft²],
-            cd_min:         minimun drag coefficient [-],
-            k_ind:          indeced drag factor[-]
+            wing_loading:               wing loading, W/S [lbf/ft²],
+            q_cruise:                   dynamic pressure in cruise [lbf/ft²],
+            cd_min:                     minimun drag coefficient [-],
+            k_ind:                      induced drag factor[-]
 
     return:
             thrust-to-weight curve [-]
@@ -71,8 +71,9 @@ def cruise_speed_TW(wing_loading,q_cruise,cd_min,k_ind):
 
     return (q_cruise * cd_min) / wing_loading + (k_ind / q_cruise) * wing_loading # Gudmundsson (3-10)
 
+def calc_bestROC(wing_loading): return 43.591 + 2.2452*wing_loading
 
-def service_ceiling_TW(wing_loading,v_y,q_ceiling,cd_min,k_ind): 
+def service_ceiling_TW(wing_loading,q_ceiling,cd_min,k_ind): 
     """
     Calcula a curva de teto de serviço
 
@@ -86,11 +87,10 @@ def service_ceiling_TW(wing_loading,v_y,q_ceiling,cd_min,k_ind):
     return:
             thrust-to-weight curve [-]
     """
-    return (1.667/v_y) + (q_ceiling*cd_min/wing_loading) + (k_ind*wing_loading/q_ceiling) # Gudmundsson (3-11)
+    return (1.667/calc_bestROC(wing_loading)) + (q_ceiling*cd_min/wing_loading) + (k_ind*wing_loading/q_ceiling) # Gudmundsson (3-11)
 
 
-''' Decidir qual função utilizar para o teto de serviço
-def service_ceiling_TW(wing_loading,v_vertical,rho_ceiling,cd_min,k_ind): 
+def service_ceiling_slide_TW(wing_loading,v_vertical,rho_ceiling,cd_min,k_ind): 
     """
     Calcula a curva de teto de serviço
 
@@ -105,7 +105,26 @@ def service_ceiling_TW(wing_loading,v_vertical,rho_ceiling,cd_min,k_ind):
             thrust-to-weight curve [lb/ft²]
     """
     return (v_vertical/np.sqrt(np.sqrt(k_ind/(3*cd_min))*2*wing_loading/rho_ceiling)) + 4*np.sqrt(k_ind*cd_min/3) # Slide
-'''
+
+def to_run_ground_distance_TW(wing_loading,cl_to,cd_to,rho_to,cl_max_to,sg,friction_const,g_acc):
+        """
+        Calcula a curva de teto de serviço
+
+        params:
+            wing_loading:       wing loading, W/S [lbf/ft²],
+            cl_to:              lift coefficient at T-O,
+            cd_to:              drag coefficient at T-O,
+            rho_tho:            air density at the desired altitude [slug/ft³],
+            //q_to:               dynamic pressure at V_lof/sqrt(2) and TO altitude,
+            cl_max_to   :             maximum lift in T-O config[-],
+            sg:                 ground run [ft],
+            friction_const:     ground friction constant (typ.0.04),
+            g_acc:              acceleration due to gravity [ft/s²]
+
+        return:
+            thrust-to-weight curve [lb/ft²]
+        """  
+        return (1.21/(g_acc*rho_to*cl_max_to*sg))*wing_loading + (0.605*(cd_to-friction_const*cl_to)/cl_max_to) + friction_const        
 
 def calc_curves(ws,params):
         
@@ -124,34 +143,52 @@ def calc_curves(ws,params):
                 ws,
                 params.q_cruise,
                 params.cd_min_cruise,
-                params.k_ind_drag
+                params.k_ind_cruise
         )
 
         tw_ceiling = service_ceiling_TW(
                 ws,
-                params.v_y_ceiling,
+                #params.v_y_ceiling,
                 params.q_ceiling,
-                params.cd_min_cruise,
-                params.k_ind_drag
+                params.cd_min_ceiling,
+                params.k_ind_ceiling
         )
+        '''tw_ceiling_slide = service_ceiling_slide_TW(
+                ws,
+                params.v_vertical,
+                params.rho_ceiling,
+                params.cd_min_ceiling,
+                params.k_ind_ceiling
+        )'''
 
-        tw_turn = level_constant_velocity_turn_TW(
+        '''tw_turn = level_constant_velocity_turn_TW(
                 ws,
                 params.q_turn,
                 params.n_turn,
                 params.cd_min_turn,
                 params.k_ind_turn
-        )
+        )'''
 
-        curves = ConstraintCurves(ws=params.WS, tw_cruise=tw_cruise,tw_climb=tw_climb,tw_turn=tw_turn,tw_ceiling=tw_ceiling,ws_stall=ws_stall)
+        '''tw_TO_run_distance = to_run_ground_distance_TW(
+              ws,
+              params.cl_to,
+              params.cd_to,
+              params.rho_to,
+              params.cl_max_to,
+              params.sg,
+              params.friction_const,
+              params.g_acc  
+        )'''
+        curves = ConstraintCurves(ws=params.WS, tw_cruise=tw_cruise,tw_climb=tw_climb,
+                                  tw_ceiling=tw_ceiling,ws_stall=ws_stall)
         return curves
 
 def find_tw_required(ws,params):
         curves = calc_curves(ws,params)
-        tw = np.maximum.reduce([curves.tw_climb,curves.tw_cruise,curves.tw_turn,curves.tw_ceiling])
+        tw = np.maximum.reduce([curves.tw_climb,curves.tw_cruise,curves.tw_ceiling])
         return tw
 
-def find_optmumPoint(params):
+def find_optimumPoint(params):
         ws_stall=stall_speed_WS(params.rho_stall,params.v_stall,params.cl_max_stall)
         res = minimize(
                 fun=lambda x: find_tw_required(x[0],params),
@@ -161,27 +198,37 @@ def find_optmumPoint(params):
 
         ws_opt = res.x[0]
         tw_opt = res.fun
+
         return ws_opt,tw_opt
 
-def plot_ConstraintsDiagram(params,curves):
-        ws_opt,tw_opt = find_optmumPoint(params)
-        plt.figure(figsize=(8, 6))
+def find_point(ws,params):
+      tw = find_tw_required(ws,params)
+      return ws,tw
 
+def plot_ConstraintsDiagram(params,curves, point=None):
+
+        ws_opt,tw_opt = find_optimumPoint(params)
+        plt.figure(figsize=(8, 6))
+        print(f"Design Point: {ws_opt:.3f}, {tw_opt:.3f}")
         
+
         plt.plot(curves.ws, curves.tw_climb, 'b', label='Rate of Climb', linewidth=2)
-        plt.plot(curves.ws, curves.tw_turn, 'm', label='Level Turn', linewidth=2)
+        #plt.plot(curves.ws, curves.tw_TO_run_distance, 'm', label='T-O Run', linewidth=2)
         plt.plot(curves.ws, curves.tw_ceiling, 'g', label='Service Ceiling', linewidth=2)
+        #plt.plot(curves.ws, curves.tw_ceiling_slide, 'orange', label='Service Ceiling Slide', linewidth=2)
         plt.plot(curves.ws, curves.tw_cruise, 'c', label='Cruise', linewidth=2)
         plt.axvline(curves.ws_stall, color='k', label='Stall', linewidth=2)
-        plt.plot(ws_opt,tw_opt, 'ko', color='red',label='Desing Point')
+        plt.plot(ws_opt,tw_opt, 'o', color='r',label='Design Point')
 
-        
+        if point!=None:
+                print(f"Given Point: {point[0]:.3f}, {point[1]:.3f}")
+                plt.plot(point[0],point[1], 'o', color='darkorange',label='Given Point')
 
         plt.title('Constraints Diagram')
         plt.xlabel('W/S [lbf/ft²]')
         plt.ylabel('T/W [-]')
-        plt.xlim(0, 100)
-        plt.ylim(0,max(np.max(curves.tw_cruise),np.max(curves.tw_climb),np.max(curves.tw_turn),np.max(curves.tw_ceiling)) * 1.1)
+        plt.xlim(0, 50)
+        plt.ylim(0,max(np.max(curves.tw_cruise),np.max(curves.tw_climb),np.max(curves.tw_ceiling)) * 1.1)
         plt.grid(True)
         plt.legend()
         plt.show()

@@ -8,8 +8,8 @@ from parameters import *
 from equations import *
 from ConstrainstsDiagram import *
 import matplotlib.pyplot as plt
+from atmos import *
 
-'''
 W0_initial_guess = 1000  # adjust based on your problem
 
 ldmax_list, wfw0_list, wew0_list, wcruise_list, w0_list = [], [], [], [], []
@@ -28,7 +28,7 @@ for ar in AR_list:
     wcruise_list.append(results.wcruise)
     w0_list.append(results.w0)
 
-    print(results)
+'''    print(results)
 
 leg = ["Wf/W0", "Wcruise/W0", "We/W0"]
 figSize = (10, 6)
@@ -57,8 +57,31 @@ plt.savefig("W0.png")
 '''
 
 params = ConstraintsParameters()
+
+
 curves = calc_curves(params.WS,params)
-plot_ConstraintsDiagram(params,curves)
 
 
+optimum_point = find_optimumPoint(params)
 
+s_wing_design = float(((optimum_point[0]**(-1))*W0_solution[0]))
+thrust_design = float((optimum_point[1]*W0_solution[0]))
+
+
+v_ref = 84.6
+power_design = thrust_design*v_ref/(550*0.7)
+
+print(f"Power: {power_design:.3f} hp")
+print(f"S_wing: {s_wing_design:.3f} ft²")
+
+point=(find_point(17,params))
+
+s_wing = float(((point[0]**(-1))*W0_solution[0]))
+thrust = float((point[1]*W0_solution[0]))
+power = thrust*v_ref/(550*0.7)
+
+print()
+print(f"Power: {power:.3f} hp")
+print(f"S_wing: {s_wing:.3f} ft²")
+print()
+plot_ConstraintsDiagram(params,curves,point)
