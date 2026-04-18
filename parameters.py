@@ -63,8 +63,8 @@ class ConstraintsParameters:
 
     # Stall Speed Criteria:
     rho_stall: float = 0.002378         # [slug/ft³]  //sea level
-    v_stall: float = 90                 # [ft/s]
-    cl_max_stall: float = 1.8           # [-]
+    v_stall: float = 95                 # [ft/s]
+    cl_max_stall: float = 1.6           # [-]
 
     # Cruise Speed Criteria:
     q_cruise: float = 50.67           # [lbf/ft²]  //pho=0.0019528281740147837 V=227,8
@@ -72,9 +72,9 @@ class ConstraintsParameters:
     k_ind_cruise: float = 0.04        # [-]        //e=0.8 AR=10
 
     # Rate of Climb Criteria:
-    v_vertical_climb: float = 1.2*v_stall*0.1    # [ft/s]
+    v_vertical_climb: float = 1.2*v_stall*0.1                       # [ft/s]
     v_inf_climb: float = 1.2*v_stall                                # [ft/s]     //V_inf = 1.2V_stall
-    q_climb: float = 7.976                                          # [lbf/ft²]  //pho=0.0021568512825572957 V=86.4
+    q_climb: float =  0.002156851282557295 *0.5 * v_inf_climb**2    # [lbf/ft²]  //pho=0.0021568512825572957
     cd_min_climb: float = 0.02                                      # [-]
     k_ind_climb: float = 0.04                                       # [-]
 

@@ -68,7 +68,7 @@ s_wing_design = float(((optimum_point[0]**(-1))*W0_solution[0]))
 thrust_design = float((optimum_point[1]*W0_solution[0]))
 
 
-v_ref = 84.6
+v_ref = 108
 power_design = thrust_design*v_ref/(550*0.7)
 
 print(f"Power: {power_design:.3f} hp")
@@ -77,9 +77,8 @@ print(f"S_wing: {s_wing_design:.3f} ft²")
 point=(find_point(17,params))
 
 s_wing = float(((point[0]**(-1))*W0_solution[0]))
-thrust = float((point[1]*W0_solution[0]))
-power = thrust*v_ref/(550*0.7)
-
+thrust_frac = float((point[1]*W0_solution[0]))
+power = thrust_frac*v_ref/(550*0.7)
 print()
 print(f"Power: {power:.3f} hp")
 print(f"S_wing: {s_wing:.3f} ft²")
