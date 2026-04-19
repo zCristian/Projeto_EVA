@@ -14,10 +14,19 @@ W2W1 = 0.985 # Climb
 
 # Aircraft parameters
 A = 1.67 # Table 3.1 Raymer
+#A = 0.74 # Agrícola
 C = -0.16 # Table 3.1 Raymer
+#C = -0.03 # Agrícola
 Kvs = 1 # Table 3.1 Raymer
 Kld = 11
 SwetSref = 3.5
+a = 0
+b = 1.67
+C1 = -0.14
+C2 = 0.07
+C3 = 0.1
+C4 = -0.1
+C5 = 0.11
 
 Ccbhp = 0.4 / 3600 # Propeller cruise Cbhp - Table 3.4 (1/s)
 Ccnp = 0.8  # Propeller cruise Np - Table 3.4
@@ -31,7 +40,7 @@ Hc = 2000 * 3.28084 # Teto de serviço (ft)
 
 # Calculated values
 hpW0 = 0.046
-W0S = 20
+W0S = 17
 Vmax = 280 * 0.539 # kt
 
 class AspectRatio:

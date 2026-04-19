@@ -79,7 +79,7 @@ def Cc():
 
 ################## UPDATED EQUATIONS ################## 
 def updated_WeW0(W0):
-    wew0 = -0.25 + 1.18 * (W0 ** -0.2) * (A ** 0.08) * (hpW0 ** 0.05) * (W0S ** -0.05) * (Vmax ** 0.27)
+    wew0 = a + b * (W0 ** C1) * (A ** C2) * (hpW0 ** C3) * (W0S ** C4) * (Vmax ** C5)
     results_updated.wew0 = wew0
     return wew0
 
