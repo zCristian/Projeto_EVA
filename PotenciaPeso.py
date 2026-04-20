@@ -59,13 +59,15 @@ def PowerWeight_statistical(type_aircraft: str = 'GA-single-engine')-> float:
     """
     if type_aircraft == 'GA-single-engine':
         return 0.07 # [hp/lb]
+    if type_aircraft == 'Agricultural':
+        return 0.09 # [hp/lb]
     else:
         print('Adicione um novo tipo de aeronave na função.')
         return -1
 
 def PW_Vmax (V_max_fts: float,
-             alfa: float = 0.025,
-             C: float = 0.22) -> float:
+             alfa: float = 0.009,
+             C: float = 0.5) -> float:
         """
         Tabela 5.4 do Raymer estabelece relacao estatistica de Potencia-Peso 
         com base na velocidade maxima (em kt). Lembrando que é a razão potên-
@@ -110,6 +112,8 @@ def plot_PW_Vmax(V_max: list,
     
 def Thrust_Matching_cruise(L_D_cruise: float,
                            V_cruise: float,
+                           PcrPto: float,
+                           WcrWto: float,
                            eta_p: float = 0.8) -> float:
     """
     Equacao 5.2 do Raymer. Verificar Potencia-Peso para cruzeiro.
@@ -128,11 +132,17 @@ def Thrust_Matching_cruise(L_D_cruise: float,
     TW_cruise = 1 / (L_D_cruise)
     PW_cruise = Thrust2Power_Weight(TW_cruise, V_cruise, eta_p)
     
-    return TW_cruise, PW_cruise
+    # Convertendo Potencia em condicoes de cruzeiro para de decolagem
+    PWcr_to = PW_cruise * WcrWto / PcrPto
+    
+    return PWcr_to
 
 def Thrust_Climb(L_D_climb: float,
                  V_vertical: float,
-                 V: float):
+                 V: float,
+                 eta_P: float,
+                 WclWto: float,
+                 PclPto: float):
     """
     Calcula a tracao em subida (climb).
     Args:
@@ -143,59 +153,44 @@ def Thrust_Climb(L_D_climb: float,
         TW_climb   (float): Razao tracao-peso para subida [lb/lb]
         PW_climb   (float): Razao potencia-peso para subida [hp/lb]
     """
-    V_vertical = V_vertical/60 # convertendo ft/min para ft/sec
+    # convertendo ft/min para ft/sec
+    V_vertical = V_vertical/60
+    
     TW_climb = 1/L_D_climb + V_vertical/V
-    PW_climb = Thrust2Power_Weight(TW=TW_climb, V=V, eta_p=0.75)
+    PW_climb = Thrust2Power_Weight(TW=TW_climb, V=V, eta_p=eta_P)
     
-    return TW_climb, PW_climb
+    # Convertendo Potencia em condicoes de cruzeiro para de decolagem
+    PWcl_to = PW_climb * WclWto / PclPto
+    
+    return TW_climb, PWcl_to
 
-def Thrust_Matching_takeoff(PW_cruise: float,
-                            TW_cruise: float,
-                            W1W0: float = 0.97,
-                            W2W1: float = 0.985,
-                            Tcruise_Tto: float = 0.70) -> float:
-    """
-    Calculou-se a tracao em cruzeiro. Necessita-se da tracao na decolagem.
-    
-    Args:
-        PW_cruise   (float): Calculado no Thrust_Matching [hp/lb]
-        TW_cruise   (float): Calculado no Thrust_Matching [lb/lb]
-        W1W0        (float): #razao da primeira etapa da missao (decolagem), Raymer define 0.97
-        W2W1        (float): #razao da segunda etapa da missao (climb), Raymer define 0.985
-        Tto_Tcruise (float): #razao tracao de decolagem e tracao de cruzeiro, valores variam de
-                              [0.60-0.80], se possivel, verificar se tem dados dos fabricantes
-    Return:
-        TW_takeoff  (float):  takeoff Thrust-to-Weight ratio [lb/lb]
-        PW_takeoff  (float):  takeoff Power-to-Weight ratio  [hp/lb]
-    """
-    Wcruise_Wtakeoff = W1W0*W2W1
-    
-    TW_takeoff = TW_cruise * Wcruise_Wtakeoff / Tcruise_Tto
-    PW_takeoff = PW_cruise * Wcruise_Wtakeoff / Tcruise_Tto # verificar
-    
-    return TW_takeoff, PW_takeoff
 
 def powerEstimate(W0: float,
                   W1: float,
                   W2: float,
                   V_cruise_fts: float,
                   LD_cruise: float,
+                  Pcr_Pto: float,
+                  eta_cruise: float,
+                  LD_climb: float,
+                  Vv_climb: float,
+                  V_inf_climb: float,
+                  etaP_climb: float,
+                  Pcl_Pto: float,
                   V_max: Optional[float] = None):
     
-    Power_selected = []
-    V_selected = [] # velocidade para cada potencia relacionada
+    PW_selected = []
     
     # Passo 1: Estimativa com base em dados históricos
-    PW_statistical = PowerWeight_statistical(type_aircraft='GA-single-engine')
+    PW_statistical = PowerWeight_statistical(type_aircraft='Agricultural')
     
-                # PRECISAMOS SABER QUAL PESO É UTLIZADO NESSA FASE (por enquanto vou considerar W0)
-    Power_selected.append(PW_statistical * W0)
-    V_selected.append(0) # Zero, porque se essa for a maior potencia, iremos desconsiderar, estará 
-                         # superestimando o projeto
+    PW_selected.append(PW_statistical)
+
     ###############################################################################################
-    
     # Passo 2: Calculo de acordo com velocidade máxima
     
+    a = 0.009 # Tabela 5.4 Raymer
+    c = 0.5  # Tabela 5.4 Raymer
     if V_max == None:       
             # Como no nosso projeto, a velocidade máxima não é um requisito, mas a velo-
             # cidade de cruzeiro, sim (250 km/h). Iremos fazer um estudo. Irá ser plota-
@@ -205,36 +200,33 @@ def powerEstimate(W0: float,
             # Considere que a velocidade máxima varia entre a velocidade de cruzeiro e 
             # um valor que representa cerca de 54% acima da velocidade de cruzeiro.
         VmaxList = np.linspace(V_cruise_fts, V_cruise_fts/0.65, 20)
-        PWlist = PW_Vmax(VmaxList, alfa=0.025, C=0.22)
+        PWlist = PW_Vmax(VmaxList, alfa=a, C=c)
         plot_PW_Vmax(V_max=VmaxList, PW=PWlist)
         
         V_max = float(input('Selecione a Velocidade Máxima [ft/sec] desejada no projeto: '))
-        PW_max_airspeed = PW_Vmax(V_max_fts=V_max, alfa=0.025, C=0.22)
+        PW_max_airspeed = PW_Vmax(V_max_fts=V_max, alfa=a, C=c)
     
     else:
-        PW_max_airspeed = PW_Vmax(V_max_fts=V_max, alfa=0.025, C=0.22)
+        PW_max_airspeed = PW_Vmax(V_max_fts=V_max, alfa=a, C=c)
     
-    Power_selected.append(PW_max_airspeed * W0)
-    V_selected.append(V_max)
+    PW_selected.append(PW_max_airspeed)
+
     ###############################################################################################
-    
     # Passo 3: Calculo de Potencia necessária em cruzeiro
-    TW_cruise, PW_cruise = Thrust_Matching_cruise(L_D_cruise = LD_cruise, V_cruise= V_cruise_fts, eta_p=0.8)
+    PW_cruise = Thrust_Matching_cruise(L_D_cruise = LD_cruise, V_cruise= V_cruise_fts, 
+                                       PcrPto=Pcr_Pto, WcrWto=W2/W0, eta_p=eta_cruise)
     
-    Power_selected.append(PW_cruise * W2)
-    V_selected.append(V_cruise_fts)
+    PW_selected.append(PW_cruise)
+
     ###############################################################################################
     # Passo 4: Calculo Potencia necessaria para subida
-        # Como escolher L/D para subida? V_vertical? V?
-    TW_climb, PW_climb = Thrust_Climb(L_D_climb=15, V_vertical=100, V=190)
-    Power_selected.append(PW_climb * W1)
-    ###############################################################################################
+    TW_climb, PW_climb = Thrust_Climb(L_D_climb=LD_climb, V_vertical=Vv_climb, V=V_inf_climb, 
+                                      eta_P=etaP_climb, WclWto=W1/W0, PclPto=Pcl_Pto)
+    PW_selected.append(PW_climb)
     
-    # Passo 5: Calculo Potencia necessaria na decolagem com base na potencia em cruzeiro
-    PW_takeoff = Thrust_Matching_takeoff(PW_cruise= PW_cruise, TW_cruise= TW_cruise, W1W0=0.97, W2W1=0.985, Tcruise_Tto=0.7)[1]
+    # PW_takeoff = Thrust_Matching_takeoff(PW_cruise= PW_cruise, TW_cruise= TW_cruise, W1W0=W1/W0, W2W1=0.985, Tcruise_Tto=0.7)[1]
     
-    Power_selected.append(PW_takeoff * W0)
-    V_selected.append(-1) # se esse for a maior potencia requerida, vamos precisar de algo para calcular a Vstall
+    
     ###############################################################################################
     
     print('##### RAZAO POTENCIA-PESO #####')
@@ -242,15 +234,13 @@ def powerEstimate(W0: float,
     print(f'P/W velocidade máxima: {PW_max_airspeed:.5f} [hp/lb], com Velocidade Máxima de {V_max:.1f} ft/s')
     print(f'P/W cruzeiro:          {PW_cruise:.5f} [hp/lb]')
     print(f'P/W subida:            {PW_climb:.5f} [hp/lb]')
-    print(f'P/W decolagem:         {PW_takeoff:.5f} [hp/lb]')
     print()
     
     print('##### POTENCIAS CALCULADAS #####')
-    print(f'P estatístico:       {Power_selected[0]:.2f} [hp]')
-    print(f'P velocidade máxima: {Power_selected[1]:.2f} [hp]')
-    print(f'P cruzeiro:          {Power_selected[2]:.2f} [hp]')
-    print(f'P subida:            {Power_selected[3]:.2f} [hp]')
-    print(f'P decolagem:         {Power_selected[4]:.2f} [hp]')
+    print(f'P estatístico:       {PW_selected[0]*W0:.2f} [hp]')
+    print(f'P velocidade máxima: {PW_selected[1]*W0:.2f} [hp]')
+    print(f'P cruzeiro:          {PW_selected[2]*W0:.2f} [hp]')
+    print(f'P subida:            {PW_selected[3]*W0:.2f} [hp]')
     
     
-    return max(Power_selected), PW_max_airspeed, TW_climb
+    return max(PW_selected), TW_climb

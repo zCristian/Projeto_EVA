@@ -13,10 +13,8 @@ W1W0 = 0.97 # Warmup and takeoff
 W2W1 = 0.985 # Climb
 
 # Aircraft parameters
-A = 1.67 # Table 3.1 Raymer
-#A = 0.74 # Agrícola
-C = -0.16 # Table 3.1 Raymer
-#C = -0.03 # Agrícola
+A = 0.74 # Table 3.1 Raymer - Agrícola
+C = -0.03 # Table 3.1 Raymer - Agrícola
 Kvs = 1 # Table 3.1 Raymer
 Kld = 11
 SwetSref = 3.5
@@ -39,8 +37,8 @@ M = V / Vsound
 Hc = 2000 * 3.28084 # Teto de serviço (ft)
 
 # Calculated values
-hpW0 = 0.046
-W0S = 17
+hpW0 = 0.072
+W0S = 15
 Vmax = 280 * 0.539 # kt
 
 class AspectRatio:

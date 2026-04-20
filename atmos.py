@@ -11,7 +11,7 @@ def T_altitude (h_ft: float) -> float:
         razaoT  (float): Razao Temperatura local por Temperatura ao nivel do mar
     """
     
-    h_m = h_ft/0.3048  # [m]
+    h_m = h_ft*0.3048  # [m]
     
     assert h_m <= 11000, 'Acima dessa altitude, as propriedades se comportam de maneira diferente.'
     
@@ -35,7 +35,7 @@ def rho_altitude(h_ft: float) -> float:
         
     """
     
-    assert h_ft <= 11000*0.3048, 'Acima dessa altitude, as propriedades se comportam de maneira diferente.'
+    assert h_ft <= 11000/0.3048, 'Acima dessa altitude, as propriedades se comportam de maneira diferente.'
     
     g0 = 9.80665 # [m/s2]
     R  = 287.05  # [J/kg.K]
